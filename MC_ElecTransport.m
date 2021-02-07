@@ -14,8 +14,8 @@ nm = 1e-9; %nanometre
 ps = 1e-12; %picosecond
 
 % Dimensions
-Elec = 1; % simulates for 1 particle
-% Elec = 2; % simulates for 5 particles at once
+% Elec = 1; % simulates for 1 particle
+Elec = 3; % simulates for 5 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
 x = zeros(1,xdim)*nm;
@@ -32,8 +32,8 @@ steps = 10;
 % t = zeros(1,steps);
 % Temp = zeros(1,steps);
 dt = nm/vtFirst; %5.347e-15s
-Temp = zeros(steps,Elec);
-t = zeros(steps,Elec);
+Temp = zeros(1,Elec);
+t = zeros(1,Elec);
 
 on = 1;
 off = 0;
@@ -47,8 +47,8 @@ re = 0; % default rebound velocity factor
 for i = 1:steps    
    
     if i == 1
-        t(i,1) = dt;
-        Temp(i,1) = InitialTemp;
+        t(i,:) = dt;
+        Temp(i,:) = InitialTemp;
         vt = vtFirst;        
         
         Boxes = {};
@@ -160,7 +160,7 @@ for i = 1:steps
                 
     end
 
-    % 1c-i)  Particle Plot   
+%     1c-i)  Particle Plot   
     for e = 1:Elec
         figure(1)
         plot(x(:,e),y(:,e));
@@ -179,19 +179,20 @@ for i = 1:steps
         figure(2)
         plot(t(:,e),Temp(:,e));
         grid on;
+        hold on;
     end 
     xlabel('Time (s)')
     ylabel('Temperature (K)')
-    title(['Current Temperature: ', num2str(Temp(i)), ...
-        'K Max T: ', num2str(max(Temp)),'K Min T: ',...
-        num2str(min(Temp)),'K']) % change T
+    title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
+        'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
+        num2str(min(Temp,[],'all')),'K']) % change T
         
          
-    pause(0.01)
+    pause(0.05)
 end
 
 display('Seconds Passed', num2str(t(i)));
-finalTemp = Temp(steps)
+finalTemp = num2str(mean(Temp(i,:)))
 
 
 

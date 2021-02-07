@@ -15,11 +15,11 @@ ps = 1e-12; %picosecond
 
 % Dimensions
 % Elec = 1; % simulates for 1 particle
-Elec = 3; % simulates for 5 particles at once
+Elec = 2; % simulates for 5 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
-x = zeros(1,xdim)*nm;
-y = zeros(1,ydim*2)*nm; %need to make same length 
+x = zeros(Elec,xdim)*nm;
+y = zeros(Elec,ydim*2)*nm; %need to make same length 
 % Reg = zeros(xdim*1e9,ydim*1e9)*nm;  % semiconductor region
 
 % Specifics
@@ -74,8 +74,8 @@ for i = 1:steps
 %                 Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) 
 %                                 
 %             else
-                x(i,e) = randx;
-                y(i,e) = randy;
+                x(e,i) = randx;
+                y(e,i) = randy;
                 e=e+1;
 %             end
                       
@@ -91,25 +91,15 @@ for i = 1:steps
             for e = 1:Elec
                 theta = rand*360; % random angle in deg
                 dz = vtFirst*Tmn; % straight path
-                dx(i,e) = sind(theta)*dz; % new x dif
-                dy(i,e) = cosd(theta)*dz; % new y dif 
-                x(i,e) = x(i-1,e) + dx(i,e);
-                y(i,e) = y(i-1,e) + dy(i,e); 
+                dx(e,i) = sind(theta)*dz; % new x dif
+                dy(e,i) = cosd(theta)*dz; % new y dif 
+                x(e,i) = x(e,i-1) + dx(e,i);
+                y(e,i) = y(e,i-1) + dy(e,i); 
                 Temp(i,e) = Temp(i-1,e);
                 vtNew = vtFirst;
             end
 
-        elseif scatter == off % no scattering, just continue along inital path
-            
-            for e = e:Elec
-                dx(i,e) = x(2,e)-x(1,e);
-                dy(i,e) = y(2,e)-y(1,e); 
-            end
-             
-            vtNew = vt;
-            Temp(i,:) = Temp(i-1,:);
-
-        else % yes scatter
+        elseif scatter == on % yes scatter 
             
             for e = 1:Elec 
                
@@ -118,25 +108,44 @@ for i = 1:steps
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
 %                     vtNew = vtFirst*chi2rnd(dof);
-                    vtNew(i,e) = vtFirst*(rand/100+0.995);
+                    vtNew(e,i) = vtFirst*(rand/100+0.995);
 
                     theta = rand*360; % random angle in deg
-                    dz(i,e) = vtNew(i,e)*Tmn; % straight path
-                    dx(i,e) = sind(theta)*dz(i,e); % new x difference
-                    dy(i,e) = cosd(theta)*dz(i,e); % new y difference 
+                    dz(e,i) = vtNew(e,i)*Tmn; % straight path
+                    dx(e,i) = sind(theta)*dz(e,i); % new x difference
+                    dy(e,i) = cosd(theta)*dz(e,i); % new y difference 
                     
                     % updating position, velocity, temperature
                     TempNew = me*vtNew.^2/(2*kB); 
-                    Temp(i,e) = TempNew(i,e);                    
-                    x(i,e) = x(i-1,e) + dx(i,e);
-                    y(i,e) = y(i-1,e) + dy(i,e); 
+                    Temp(i,e) = TempNew(e,i);                    
+                    x(e,i) = x(e,i-1) + dx(e,i);
+                    y(e,i) = y(e,i-1) + dy(e,i); 
                     vt = vtNew;
                     
-                    collide = collide + 1;
+                    collide = collide + 1; 
+                                   
+                else % no scattering, just continue along inital path
                     
+                    for e = 1:Elec
+                        dx(e,i) = x(e,2)-x(e,1);
+                        dy(e,i) = y(e,2)-y(e,1); 
+                    end
+
+                    vtNew = vt;
+                    Temp(i,:) = Temp(i-1,:);
                 end
                 
             end
+
+        else % no scattering, just continue along inital path
+            
+            for e = 1:Elec
+                dx(e,i) = x(e,2)-x(e,1);
+                dy(e,i) = y(e,2)-y(e,1); 
+            end
+             
+            vtNew = vt;
+            Temp(i,:) = Temp(i-1,:);
                                             
         end
        
@@ -163,7 +172,7 @@ for i = 1:steps
 %     1c-i)  Particle Plot   
     for e = 1:Elec
         figure(1)
-        plot(x(:,e),y(:,e));
+        plot(x(e,:),y(e,:));
         grid on;
         hold on; 
     end
@@ -185,8 +194,7 @@ for i = 1:steps
     ylabel('Temperature (K)')
     title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
         'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
-        num2str(min(Temp,[],'all')),'K']) % change T
-        
+        num2str(min(Temp,[],'all')),'K']) % change T        
          
     pause(0.05)
 end

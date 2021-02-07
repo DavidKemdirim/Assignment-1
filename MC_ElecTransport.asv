@@ -14,8 +14,8 @@ nm = 1e-9; %nanometre
 ps = 1e-12; %picosecond
 
 % Dimensions
-Elec = 1; % simulates for 1 particle
-% Elec = 2; % simulates for 5 particles at once
+% Elec = 1; % simulates for 1 particle
+Elec = 2; % simulates for 5 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
 x = zeros(1,xdim)*nm;
@@ -25,14 +25,15 @@ y = zeros(1,ydim*2)*nm; %need to make same length
 % Specifics
 InitialTemp = 300; % in [K]
 vtFirst = sqrt(2*kB*InitialTemp/me); %1.8701e5 in m/s
-Tmn = 0.02*ps; 
+Tmn = 0.2*ps; 
 
 % Simulation
 steps = 10; 
 % t = zeros(1,steps);
 % Temp = zeros(1,steps);
 dt = nm/vtFirst; %5.347e-15s
-Temp = zeros(steps,Elec);
+Temp = zeros(1,Elec);
+t = zeros(1,Elec);
 
 on = 1;
 off = 0;
@@ -46,8 +47,8 @@ re = 0; % default rebound velocity factor
 for i = 1:steps    
    
     if i == 1
-        t(i,1) = dt;
-        Temp(i,1) = InitialTemp;
+        t(i,:) = dt;
+        Temp(i,:) = InitialTemp;
         vt = vtFirst;        
         
         Boxes = {};
@@ -73,8 +74,8 @@ for i = 1:steps
 %                 Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) 
 %                                 
 %             else
-                x(i,e) = randx;
-                y(i,e) = randy;
+                x(e,i) = randx;
+                y(e,i) = randy;
                 e=e+1;
 %             end
                       
@@ -90,52 +91,61 @@ for i = 1:steps
             for e = 1:Elec
                 theta = rand*360; % random angle in deg
                 dz = vtFirst*Tmn; % straight path
-                dx(i,e) = sind(theta)*dz; % new x dif
-                dy(i,e) = cosd(theta)*dz; % new y dif 
-                x(i,e) = x(i-1,e) + dx(i,e);
-                y(i,e) = y(i-1,e) + dy(i,e); 
+                dx(e,i) = sind(theta)*dz; % new x dif
+                dy(e,i) = cosd(theta)*dz; % new y dif 
+                x(e,i) = x(e,i-1) + dx(e,i);
+                y(e,i) = y(e,i-1) + dy(e,i); 
                 Temp(i,e) = Temp(i-1,e);
                 vtNew = vtFirst;
             end
 
-        elseif scatter == off % no scattering, just continue along inital path
+        elseif scatter == on % yes scatter 
             
-            for e = e:Elec
-                dx(i,e) = x(2,e)-x(1,e);
+            for e = 1:Elec 
+               
+                if r(1,e) < p*10   % check each electron
+                    
+                    scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
+                    dof = 3; %degrees of freedom
+%                     vtNew = vtFirst*chi2rnd(dof);
+                    vtNew(e,i) = vtFirst*(rand/100+0.995);
+
+                    theta = rand*360; % random angle in deg
+                    dz(e,i) = vtNew(e,i)*Tmn; % straight path
+                    dx(e,i) = sind(theta)*dz(e,i); % new x difference
+                    dy(e,i) = cosd(theta)*dz(e,i); % new y difference 
+                    
+                    % updating position, velocity, temperature
+                    TempNew = me*vtNew.^2/(2*kB); 
+                    Temp(e,i) = TempNew(i,e);                    
+                    x(e,i) = x(e,i-1) + dx(e,i);
+                    y(e,i) = y(e,i-1) + dy(e,i); 
+                    vt = vtNew;
+                    
+                    collide = collide + 1; 
+                                   
+                else % no scattering, just continue along inital path
+                    
+                    for e = 1:Elec
+                        dx(e,i) = x(e,2)-x(e,1);
+                        dy(e,i) = y(e,2)-y(e,1); 
+                    end
+
+                    vtNew = vt;
+                    Temp(i,:) = Temp(i-1,:);
+                end
+                
+            end
+
+        else % no scattering, just continue along inital path
+            
+            for e = 1:Elec
+                dx(e,i) = x(2,e)-x(1,e);
                 dy(i,e) = y(2,e)-y(1,e); 
             end
              
             vtNew = vt;
             Temp(i,:) = Temp(i-1,:);
-
-        else % yes scatter
-            
-            for e = 1:Elec 
-               
-                if r(1,e) < p*100   % check each electron
-                    
-                    scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
-                    dof = 3; %degrees of freedom
-%                     vtNew = vtFirst*chi2rnd(dof);
-                    vtNew(i,e) = vtFirst*(rand/100+0.995);
-
-                    theta = rand*360; % random angle in deg
-                    dz(i,e) = vtNew(i,e)*Tmn; % straight path
-                    dx(i,e) = sind(theta)*dz(i,e); % new x difference
-                    dy(i,e) = cosd(theta)*dz(i,e); % new y difference 
-                    
-                    % updating position, velocity, temperature
-                    TempNew = me*vtNew.^2/(2*kB); 
-                    Temp(i,e) = TempNew(i,e);                    
-                    x(i,e) = x(i-1,e) + dx(i,e);
-                    y(i,e) = y(i-1,e) + dy(i,e); 
-                    vt = vtNew;
-                    
-                    collide = collide + 1;
-                    
-                end
-                
-            end
                                             
         end
        
@@ -159,10 +169,10 @@ for i = 1:steps
                 
     end
 
-    % 1c-i)  Particle Plot   
+%     1c-i)  Particle Plot   
     for e = 1:Elec
         figure(1)
-        plot(x,y);
+        plot(x(:,e),y(:,e));
         grid on;
         hold on; 
     end
@@ -173,23 +183,24 @@ for i = 1:steps
     title(['Time Passed t: ', num2str(t(i)/ps), ...
         'ps Collsions: ', num2str(collide)]) 
 
-%     % 1c-ii) Temp plot    
-%     figure(2)
-%     plot(t,Temp,'k');
-%     grid on;
-%     hold on;  
-%     xlabel('Time (s)')
-%     ylabel('Temperature (K)')
-%     title(['Current Temperature: ', num2str(Temp(i)), ...
-%         'K Max T: ', num2str(max(Temp)),'K Min T: ',...
-%         num2str(min(Temp)),'K']) % change T
-        
+    % 1c-ii) Temp plot  
+    for e = 1:Elec
+        figure(2)
+        plot(t(:,e),Temp(:,e));
+        grid on;
+        hold on;
+    end 
+    xlabel('Time (s)')
+    ylabel('Temperature (K)')
+    title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
+        'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
+        num2str(min(Temp,[],'all')),'K']) % change T        
          
-    pause(0.01)
+    pause(0.05)
 end
 
 display('Seconds Passed', num2str(t(i)));
-finalTemp = Temp(steps)
+finalTemp = num2str(mean(Temp(i,:)))
 
 
 

@@ -104,7 +104,7 @@ for i = 1:steps
             
             for e = 1:Elec 
                
-                if r(1,e) < p*10   % check each electron
+                if r(1,e) < p   % check each electron
                     
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
@@ -154,7 +154,7 @@ for i = 1:steps
 %         for e = 1:Elec
 %             
 %             if x(i,:) < 0
-%             x(i,:) = x(i,:) + 2e-7;            
+%                 x(i,:) = x(i,:) + 2e-7;            
 %             elseif x(i,:) > xdim*nm
 %                 x(i,:) = x(i,:) - 2e-7;
 %             end

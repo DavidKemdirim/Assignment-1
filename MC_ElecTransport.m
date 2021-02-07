@@ -18,8 +18,8 @@ ps = 1e-12; %picosecond
 Elec = 2; % simulates for 5 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
-x = zeros(Elec,xdim)*nm;
-y = zeros(Elec,ydim*2)*nm; %need to make same length 
+x = zeros(Elec,1)*nm;
+y = zeros(Elec,1)*nm; %need to make same length 
 % Reg = zeros(xdim*1e9,ydim*1e9)*nm;  % semiconductor region
 
 % Specifics
@@ -29,6 +29,7 @@ Tmn = 0.2*ps;
 
 % Simulation
 steps = 10; 
+% steps = 1000;
 % t = zeros(1,steps);
 % Temp = zeros(1,steps);
 dt = nm/vtFirst; %5.347e-15s
@@ -62,7 +63,7 @@ for i = 1:steps
 %         Boxes{2}.BC = 0.0; s
         
         e=1;
-%         while e <= Elec %random positions for each particle
+        while e <= Elec %random positions for each particle
                         
             randx = round(rand*xdim)*nm;
             randy = round(rand*ydim)*nm;
@@ -79,7 +80,7 @@ for i = 1:steps
                 e=e+1;
 %             end
                       
-%         end 
+        end 
         
     else
         t(i,:) = t(i-1,:) + dt;
@@ -103,7 +104,7 @@ for i = 1:steps
             
             for e = 1:Elec 
                
-                if r(1,e) < p*100   % check each electron
+                if r(1,e) < p*10   % check each electron
                     
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
@@ -118,19 +119,18 @@ for i = 1:steps
                     % updating position, velocity, temperature
                     TempNew = me*vtNew.^2/(2*kB); 
                     Temp(i,e) = TempNew(e,i);                    
-                    x(e,i) = x(e,i-1) + dx(e,i);
+                    x(e,i) = x(e,i-1) + dx(e,i); 
                     y(e,i) = y(e,i-1) + dy(e,i); 
                     vt = vtNew;
                     
                     collide = collide + 1; 
                                    
                 else % no scattering, just continue along inital path
-                    
-                    for e = 1:Elec
-                        dx(e,i) = x(e,2)-x(e,1);
-                        dy(e,i) = y(e,2)-y(e,1); 
-                    end
-
+                                        
+                    dx(e,i) = x(e,2)-x(e,1);
+                    dy(e,i) = y(e,2)-y(e,1); 
+                    x(e,i) = x(e,i-1) + dx(e,i); 
+                    y(e,i) = y(e,i-1) + dy(e,i);
                     vtNew = vt;
                     Temp(i,:) = Temp(i-1,:);
                 end
@@ -183,18 +183,18 @@ for i = 1:steps
     title(['Time Passed t: ', num2str(t(i)/ps), ...
         'ps Collsions: ', num2str(collide)]) 
 
-    % 1c-ii) Temp plot  
-    for e = 1:Elec
-        figure(2)
-        plot(t(:,e),Temp(:,e));
-        grid on;
-        hold on;
-    end 
-    xlabel('Time (s)')
-    ylabel('Temperature (K)')
-    title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
-        'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
-        num2str(min(Temp,[],'all')),'K']) % change T        
+%     % 1c-ii) Temp plot  
+%     for e = 1:Elec
+%         figure(2)
+%         plot(t(:,e),Temp(:,e));
+%         grid on;
+%         hold on;
+%     end 
+%     xlabel('Time (s)')
+%     ylabel('Temperature (K)')
+%     title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
+%         'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
+%         num2str(min(Temp,[],'all')),'K']) % change T        
          
     pause(0.05)
 end

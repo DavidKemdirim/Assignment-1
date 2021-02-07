@@ -14,8 +14,8 @@ nm = 1e-9; %nanometre
 ps = 1e-12; %picosecond
 
 % Dimensions
-% Elec = 1; % simulates for 1 particle
-Elec = 2; % simulates for 5 particles at once
+Elec = 1; % simulates for 1 particle
+% Elec = 2; % simulates for 5 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
 x = zeros(1,xdim)*nm;
@@ -26,8 +26,6 @@ y = zeros(1,ydim*2)*nm; %need to make same length
 InitialTemp = 300; % in [K]
 vtFirst = sqrt(2*kB*InitialTemp/me); %1.8701e5 in m/s
 Tmn = 0.2*ps; 
-% Ln = v*tmn;
-Ln = inf; % no scattering
 
 % Simulation
 steps = 10; 
@@ -35,6 +33,7 @@ steps = 10;
 % Temp = zeros(1,steps);
 dt = nm/vtFirst; %5.347e-15s
 Temp = zeros(steps,Elec);
+t = zeros(steps,Elec);
 
 on = 1;
 off = 0;
@@ -56,31 +55,31 @@ for i = 1:steps
         
         Boxes{1}.X = [0.9 1.1]*100*nm;
         Boxes{1}.Y = [0.8 1.0]*100*nm;
-        Boxes{1}.BC = 0.0;
+%         Boxes{1}.BC = 0.0;
         
         Boxes{2}.X = [-.9 1.1]*100*nm;
         Boxes{2}.Y = [0.0 0.2 1.1]*100*nm;
-        Boxes{2}.BC = 0.0; 
+%         Boxes{2}.BC = 0.0; s
         
         e=1;
-        while e <= Elec %random positions for each particle
+%         while e <= Elec %random positions for each particle
                         
             randx = round(rand*xdim)*nm;
             randy = round(rand*ydim)*nm;
             
-            % check to see if in box
-            if Boxes{1}.X(1,1)<randx && randx <Boxes{1}.X(1,2) &&...
-                Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) &&...
-                Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
-                Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) 
-                                
-            else
+%             % check to see if in box
+%             if Boxes{1}.X(1,1)<randx && randx <Boxes{1}.X(1,2) &&...
+%                 Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) &&...
+%                 Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
+%                 Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) 
+%                                 
+%             else
                 x(i,e) = randx;
                 y(i,e) = randy;
                 e=e+1;
-            end
+%             end
                       
-        end 
+%         end 
         
     else
         t(i,:) = t(i-1,:) + dt;
@@ -94,6 +93,8 @@ for i = 1:steps
                 dz = vtFirst*Tmn; % straight path
                 dx(i,e) = sind(theta)*dz; % new x dif
                 dy(i,e) = cosd(theta)*dz; % new y dif 
+                x(i,e) = x(i-1,e) + dx(i,e);
+                y(i,e) = y(i-1,e) + dy(i,e); 
                 Temp(i,e) = Temp(i-1,e);
                 vtNew = vtFirst;
             end
@@ -112,7 +113,7 @@ for i = 1:steps
             
             for e = 1:Elec 
                
-                if r(1,e) < p   % check each electron
+                if r(1,e) < p*100   % check each electron
                     
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
@@ -127,8 +128,8 @@ for i = 1:steps
                     % updating position, velocity, temperature
                     TempNew = me*vtNew.^2/(2*kB); 
                     Temp(i,e) = TempNew(i,e);                    
-                    x(i,e) = x(i-1,:) + dx(i,e);
-                    y(i,e) = y(i-1,:) + dy(i,e); 
+                    x(i,e) = x(i-1,e) + dx(i,e);
+                    y(i,e) = y(i-1,e) + dy(i,e); 
                     vt = vtNew;
                     
                     collide = collide + 1;
@@ -141,29 +142,31 @@ for i = 1:steps
        
                 
         %Boundary Conditions
-        for e = 1:Elec
-            
-            if x(i,:) < 0
-            x(i,:) = x(i,:) + 2e-7;            
-            elseif x(i,:) > xdim*nm
-                x(i,:) = x(i,:) - 2e-7;
-            end
-
-            if y(i,:) < 0
-                y(i,:) = x(i,:) + 2e-7;
-            elseif y(i,:) > ydim*nm
-                y(i,:) = x(i,:) - 2e-7;
-            end
-
-        end
+%         for e = 1:Elec
+%             
+%             if x(i,:) < 0
+%             x(i,:) = x(i,:) + 2e-7;            
+%             elseif x(i,:) > xdim*nm
+%                 x(i,:) = x(i,:) - 2e-7;
+%             end
+% 
+%             if y(i,:) < 0
+%                 y(i,:) = x(i,:) + 2e-7;
+%             elseif y(i,:) > ydim*nm
+%                 y(i,:) = x(i,:) - 2e-7;
+%             end
+% 
+%         end
                 
     end
 
-    % 1c-i)  Particle Plot    
-    figure(1)
-    plot(x,y);
-    grid on;
-    hold on;        
+    % 1c-i)  Particle Plot   
+    for e = 1:Elec
+        figure(1)
+        plot(x(:,e),y(:,e));
+        grid on;
+        hold on; 
+    end
     xlim([0 xdim*nm])
     ylim([0 ydim*nm])
     xlabel('X (m)')
@@ -171,16 +174,17 @@ for i = 1:steps
     title(['Time Passed t: ', num2str(t(i)/ps), ...
         'ps Collsions: ', num2str(collide)]) 
 
-%     % 1c-ii) Temp plot    
-%     figure(2)
-%     plot(t,Temp,'k');
-%     grid on;
-%     hold on;  
-%     xlabel('Time (s)')
-%     ylabel('Temperature (K)')
-%     title(['Current Temperature: ', num2str(Temp(i)), ...
-%         'K Max T: ', num2str(max(Temp)),'K Min T: ',...
-%         num2str(min(Temp)),'K']) % change T
+    % 1c-ii) Temp plot  
+    for e = 1:Elec
+        figure(2)
+        plot(t(:,e),Temp(:,e));
+        grid on;
+    end 
+    xlabel('Time (s)')
+    ylabel('Temperature (K)')
+    title(['Current Temperature: ', num2str(Temp(i)), ...
+        'K Max T: ', num2str(max(Temp)),'K Min T: ',...
+        num2str(min(Temp)),'K']) % change T
         
          
     pause(0.01)

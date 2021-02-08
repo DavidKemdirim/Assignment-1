@@ -113,13 +113,13 @@ for i = 1:steps
         elseif scatter == on % yes scatter 
             
             for e = 1:Elec 
-               
-                if r(1,e) < p*10   % check each electron
+                
+                if r(1,e) < p   % check each electron
                     
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
-%                     vtNew = scale*chi2rnd(dof);
-                    vtNew(e,i) = vtFirst*(rand/100+0.995);
+                    vtNew(e,i) = scale*chi2rnd(dof);
+%                     vtNew(e,i) = vtFirst*(rand/100+0.995);
 
                     theta = rand*360; % random angle in deg
                     dz(e,i) = vtNew(e,i)*Tmn; % straight path
@@ -131,7 +131,7 @@ for i = 1:steps
                     Temp(i,e) = TempNew(e,i);                    
                     x(e,i) = x(e,i-1) + dx(e,i); 
                     y(e,i) = y(e,i-1) + dy(e,i); 
-                    vt = vtNew;
+                    vtNew = vt;
                     
                     collide = collide + 1; 
                                    
@@ -162,24 +162,52 @@ for i = 1:steps
        
                 
         %Boundary Conditions
-%         for e = 1:Elec
-%             
-%             if x(i,:) < 0
-%                 x(i,:) = x(i,:) + 2e-7;            
-%             elseif x(i,:) > xdim*nm
-%                 x(i,:) = x(i,:) - 2e-7;
-%             end
-% 
-%             if y(i,:) < 0
-%                 y(i,:) = x(i,:) + 2e-7;
-%             elseif y(i,:) > ydim*nm
-%                 y(i,:) = x(i,:) - 2e-7;
-%             end
-% 
-%         end
+        for e = 1:Elec
+            if x(e,i) < 0 || x(e,i) > xdim*nm ||...
+                    y(e,i) < 0 || y(e,i) > ydim*nm
+                
+%                     theta = rand*360; % random angle in deg
+%                     dz(e,i) = vtNew(e,i)*Tmn; % straight path
+% %                     dx(e,i) = sind(theta)*dz(e,i); % new x difference
+%                     dy(e,i) = cosd(theta)*dz(e,i); % new y difference 
+               
+                if x(e,i) < 0
+                    x(e,i) = x(e,i) + 2e-7;            
+                elseif x(e,i) > xdim*nm
+                    x(e,i) = x(e,i) - 2e-7;
+                end
+
+                % set previous yval to boundary and calculate new y
+%                 if y(e,i) < 0 
+%                     y(e,i) = y(e,i-1) + dy(e,i);
+%                     y(e,i-1) = 0;                     
+%                 elseif y(e,i) > ydim*nm
+%                     y(e,i) = y(e,i-1) + dy(e,i);
+%                     y(e,i-1) = ydim*nm; 
+%                 end
+                
+                
+%               BC y test 1            
+                while y(e,i) < 0 || y(e,i) > ydim*nm
+                y(e,i) = y(e,i) - dy(e,i)/10;
+                end
+                
+            end
+
+            
+        end
                 
     end
 
+    %box lines
+    bx1 = [80 80]*nm;
+    bx2 = [120 120]*nm;
+    bx3 = [80 120]*nm;
+    by1 = [60 100]*nm;
+    by2 = [0 40]*nm;
+    by3 = [40 40]*nm;
+    by4 = [60 60]*nm;
+    
 %     1c-i)  Particle Plot   
     for e = 1:Elec
         figure(1)
@@ -187,6 +215,13 @@ for i = 1:steps
         grid on;
         hold on; 
     end
+    %box plot
+    plot(bx1,by1,'k')
+    plot(bx1,by2,'k')
+    plot(bx2,by1,'k')
+    plot(bx2,by2,'k')
+    plot(bx3,by3,'k')
+    plot(bx3,by4,'k')
     xlim([0 xdim*nm])
     ylim([0 ydim*nm])
     xlabel('X (m)')
@@ -194,18 +229,18 @@ for i = 1:steps
     title(['Time Passed t: ', num2str(t(i)/ps), ...
         'ps Collsions: ', num2str(collide)]) 
 
-    % 1c-ii) Temp plot  
-    for e = 1:Elec
-        figure(2)
-        plot(t(:,e),Temp(:,e));
-        grid on;
-        hold on;
-    end 
-    xlabel('Time (s)')
-    ylabel('Temperature (K)')
-    title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
-        'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
-        num2str(min(Temp,[],'all')),'K']) % change T        
+%     % 1c-ii) Temp plot  
+%     for e = 1:Elec
+%         figure(2)
+%         plot(t(:,e),Temp(:,e));
+%         grid on;
+%         hold on;
+%     end 
+%     xlabel('Time (s)')
+%     ylabel('Temperature (K)')
+%     title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
+%         'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
+%         num2str(min(Temp,[],'all')),'K']) % change T        
          
     pause(0.05)
 end
@@ -213,14 +248,14 @@ end
 display('Seconds Passed', num2str(t(i)));
 finalTemp = num2str(mean(Temp(i,:)))
 
-scale = sqrt(kB*InitialTemp/me);
-h = scale*chi2rnd(3,1,10000);
-figure(3)
-histogram(h,50)
-xlabel('Thermal Velocity (m)')
-ylabel('Count (m)')
-title(['Velocity Distribution - Average Velocity: ',...
-    num2str(mean([mean(h),median(h)])/2), ' m/s']) 
+% scale = sqrt(kB*InitialTemp/me);
+% h = scale*chi2rnd(3,1,10000);
+% figure(3)
+% histogram(h,50)
+% xlabel('Thermal Velocity (m)')
+% ylabel('Count (m)')
+% title(['Velocity Distribution - Average Velocity: ',...
+%     num2str(mean([mean(h),median(h)])/2), ' m/s']) 
 
 
 

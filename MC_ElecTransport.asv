@@ -14,12 +14,12 @@ nm = 1e-9; %nanometre
 ps = 1e-12; %picosecond
 
 % Dimensions
-Elec = 1; % simulates for 1 particle
-% Elec = 2; % simulates for 5 particles at once
+% Elec = 1; % simulates for 1 particle
+Elec = 5; % simulates for 10 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
-x = zeros(Elec,xdim)*nm;
-y = zeros(Elec,ydim*2)*nm; %need to make same length 
+x = zeros(Elec,1)*nm;
+y = zeros(Elec,1)*nm; %need to make same length 
 % Reg = zeros(xdim*1e9,ydim*1e9)*nm;  % semiconductor region
 
 % Specifics
@@ -29,6 +29,7 @@ Tmn = 0.2*ps;
 
 % Simulation
 steps = 10; 
+% steps = 1000;
 % t = zeros(1,steps);
 % Temp = zeros(1,steps);
 dt = nm/vtFirst; %5.347e-15s
@@ -37,8 +38,8 @@ t = zeros(1,Elec);
 
 on = 1;
 off = 0;
-scatter = on; %scattering on/off switch
-% scatter = off; %scattering on/off switch
+% scatter = on; %scattering on/off switch
+scatter = off; %scattering on/off switch
 collide = 0; % counter for collisons
 p = 1 - exp(-dt/Tmn); % probability for scatter threshold
 re = 0; % default rebound velocity factor
@@ -53,33 +54,43 @@ for i = 1:steps
         
         Boxes = {};
         
-        Boxes{1}.X = [0.9 1.1]*100*nm;
-        Boxes{1}.Y = [0.8 1.0]*100*nm;
+        %Test BCs
+%         Boxes{1}.X = [0.9 1.1]*100*nm; %top box
+%         Boxes{1}.Y = [0.8 1.0]*100*nm;
+% %         Boxes{1}.BC = 0.0;
+%         
+%         Boxes{2}.X = [0.9 1.1]*100*nm; %bottom box
+%         Boxes{2}.Y = [0.0 0.2]*100*nm;
+% %         Boxes{2}.BC = 0.0; 
+
+        %2nd set of BCs
+        Boxes{1}.X = [0.8 1.2]*100*nm; %top box
+        Boxes{1}.Y = [0.6 1.0]*100*nm;
 %         Boxes{1}.BC = 0.0;
         
-        Boxes{2}.X = [-.9 1.1]*100*nm;
-        Boxes{2}.Y = [0.0 0.2 1.1]*100*nm;
-%         Boxes{2}.BC = 0.0; s
+        Boxes{2}.X = [0.8 1.2]*100*nm; %bottom box
+        Boxes{2}.Y = [0.0 0.4]*100*nm;
+%         Boxes{2}.BC = 0.0;
         
         e=1;
-%         while e <= Elec %random positions for each particle
+        while e <= Elec %random positions for each particle
                         
             randx = round(rand*xdim)*nm;
             randy = round(rand*ydim)*nm;
             
-%             % check to see if in box
-%             if Boxes{1}.X(1,1)<randx && randx <Boxes{1}.X(1,2) &&...
-%                 Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) &&...
-%                 Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
-%                 Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) 
-%                                 
-%             else
+            % check to see if in box
+            if Boxes{1}.X(1,1)<randx && randx<Boxes{1}.X(1,2) &&...
+               Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) ||...%firstbox
+               Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
+               Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) %second box
+                                
+            else
                 x(e,i) = randx;
                 y(e,i) = randy;
                 e=e+1;
-%             end
+            end
                       
-%         end 
+        end 
         
     else
         t(i,:) = t(i-1,:) + dt;
@@ -102,13 +113,13 @@ for i = 1:steps
         elseif scatter == on % yes scatter 
             
             for e = 1:Elec 
-               
-                if r(1,e) < p*10   % check each electron
+                
+                if r(1,e) < p   % check each electron
                     
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
-%                     vtNew = vtFirst*chi2rnd(dof);
-                    vtNew(e,i) = vtFirst*(rand/100+0.995);
+                    vtNew(e,i) = scale*chi2rnd(dof);
+%                     vtNew(e,i) = vtFirst*(rand/100+0.995);
 
                     theta = rand*360; % random angle in deg
                     dz(e,i) = vtNew(e,i)*Tmn; % straight path
@@ -118,19 +129,17 @@ for i = 1:steps
                     % updating position, velocity, temperature
                     TempNew = me*vtNew.^2/(2*kB); 
                     Temp(i,e) = TempNew(e,i);                    
-                    x(e,i) = x(e,i-1) + dx(e,i);
+                    x(e,i) = x(e,i-1) + dx(e,i); 
                     y(e,i) = y(e,i-1) + dy(e,i); 
-                    vt = vtNew;
+                    vtNew = vt;
                     
                     collide = collide + 1; 
                                    
-                else % no scattering, just continue along inital path
-                    
-                    for e = 1:Elec
-                        dx(e,i) = x(e,2)-x(e,1);
-                        dy(e,i) = y(e,2)-y(e,1); 
-                    end
-
+                else % no scattering, just continue along inital path                                        
+                    dx(e,i) = x(e,2)-x(e,1);
+                    dy(e,i) = y(e,2)-y(e,1); 
+                    x(e,i) = x(e,i-1) + dx(e,i); 
+                    y(e,i) = y(e,i-1) + dy(e,i);
                     vtNew = vt;
                     Temp(i,:) = Temp(i-1,:);
                 end
@@ -142,6 +151,8 @@ for i = 1:steps
             for e = 1:Elec
                 dx(e,i) = x(e,2)-x(e,1);
                 dy(e,i) = y(e,2)-y(e,1); 
+                x(e,i) = x(e,i-1) + dx(e,i); 
+                y(e,i) = y(e,i-1) + dy(e,i);
             end
              
             vtNew = vt;
@@ -151,21 +162,57 @@ for i = 1:steps
        
                 
         %Boundary Conditions
-%         for e = 1:Elec
-%             
-%             if x(i,:) < 0
-%             x(i,:) = x(i,:) + 2e-7;            
-%             elseif x(i,:) > xdim*nm
-%                 x(i,:) = x(i,:) - 2e-7;
+        for e = 1:Elec
+            if x(e,i) < 0 || x(e,i) > xdim*nm ||...
+                    y(e,i) < 0 || y(e,i) > ydim*nm
+                
+                    theta = rand*360; % random angle in deg
+                    dz(e,i) = vtNew(e,i)*Tmn; % straight path
+%                     dx(e,i) = sind(theta)*dz(e,i); % new x difference
+                    dy(e,i) = cosd(theta)*dz(e,i); % new y difference 
+                    
+                    % updating position, velocity, temperature
+                    TempNew = me*vtNew.^2/(2*kB); 
+                    Temp(i,e) = TempNew(e,i);                    
+                    x(e,i) = x(e,i-1) + dx(e,i); 
+                    y(e,i) = y(e,i-1) + dy(e,i); 
+                    vt = vtNew;
+                
+                if x(e,i) < 0
+                    x(e,i) = x(e,i) + 2e-7;            
+                elseif x(e,i) > xdim*nm
+                    x(e,i) = x(e,i) - 2e-7;
+                end
+
+                %reduce the previous dy until it is within the limits
+                if y(e,i) < 0 
+                    y(e,i) = y(e,i-1) + dy(e,i);
+                    y(e,i-1) = 0;                     
+                elseif y(e,i) > ydim*nm
+                    y(e,i-1) = y(e,i); 
+                    y(e,i) = ydim*nm; 
+                end
+                
+            end
+
+            %BC y test 1            
+%             while y(e,i) < 0 || y(e,i) > ydim*nm
+%                 y(e,i) = y(e,i) - dy(e,i)/10;
 %             end
+            
+%                Boxes{1}.X(1,1)<randx && randx<Boxes{1}.X(1,2) &&...
+%                Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) ||...%firstbox
+%                Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
+%                Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) %second box
+%            
+%                 Boxes{1}.X = [0.8 1.2]*100*nm; %top box
+%                 Boxes{1}.Y = [0.6 1.0]*100*nm;
+%         %         Boxes{1}.BC = 0.0;
 % 
-%             if y(i,:) < 0
-%                 y(i,:) = x(i,:) + 2e-7;
-%             elseif y(i,:) > ydim*nm
-%                 y(i,:) = x(i,:) - 2e-7;
-%             end
-% 
-%         end
+%                 Boxes{2}.X = [0.8 1.2]*100*nm; %bottom box
+%                 Boxes{2}.Y = [0.0 0.4]*100*nm;
+
+        end
                 
     end
 
@@ -201,6 +248,15 @@ end
 
 display('Seconds Passed', num2str(t(i)));
 finalTemp = num2str(mean(Temp(i,:)))
+
+% scale = sqrt(kB*InitialTemp/me);
+% h = scale*chi2rnd(3,1,10000);
+% figure(3)
+% histogram(h,50)
+% xlabel('Thermal Velocity (m)')
+% ylabel('Count (m)')
+% title(['Velocity Distribution - Average Velocity: ',...
+%     num2str(mean([mean(h),median(h)])/2), ' m/s']) 
 
 
 

@@ -15,7 +15,7 @@ ps = 1e-12; %picosecond
 
 % Dimensions
 % Elec = 1; % simulates for 1 particle
-Elec = 2; % simulates for 5 particles at once
+Elec = 5; % simulates for 10 particles at once
 xdim = 200; %nm
 ydim = 100; %nm and need to make same length
 x = zeros(Elec,1)*nm;
@@ -104,11 +104,11 @@ for i = 1:steps
             
             for e = 1:Elec 
                
-                if r(1,e) < p   % check each electron
+                if r(1,e) < p*10   % check each electron
                     
                     scale = sqrt(kB*Temp(i-1,e)/me); %scaling factor
                     dof = 3; %degrees of freedom
-%                     vtNew = vtFirst*chi2rnd(dof);
+%                     vtNew = scale*chi2rnd(dof);
                     vtNew(e,i) = vtFirst*(rand/100+0.995);
 
                     theta = rand*360; % random angle in deg
@@ -125,8 +125,7 @@ for i = 1:steps
                     
                     collide = collide + 1; 
                                    
-                else % no scattering, just continue along inital path
-                                        
+                else % no scattering, just continue along inital path                                        
                     dx(e,i) = x(e,2)-x(e,1);
                     dy(e,i) = y(e,2)-y(e,1); 
                     x(e,i) = x(e,i-1) + dx(e,i); 
@@ -142,6 +141,8 @@ for i = 1:steps
             for e = 1:Elec
                 dx(e,i) = x(e,2)-x(e,1);
                 dy(e,i) = y(e,2)-y(e,1); 
+                x(e,i) = x(e,i-1) + dx(e,i); 
+                y(e,i) = y(e,i-1) + dy(e,i);
             end
              
             vtNew = vt;
@@ -183,24 +184,33 @@ for i = 1:steps
     title(['Time Passed t: ', num2str(t(i)/ps), ...
         'ps Collsions: ', num2str(collide)]) 
 
-%     % 1c-ii) Temp plot  
-%     for e = 1:Elec
-%         figure(2)
-%         plot(t(:,e),Temp(:,e));
-%         grid on;
-%         hold on;
-%     end 
-%     xlabel('Time (s)')
-%     ylabel('Temperature (K)')
-%     title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
-%         'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
-%         num2str(min(Temp,[],'all')),'K']) % change T        
+    % 1c-ii) Temp plot  
+    for e = 1:Elec
+        figure(2)
+        plot(t(:,e),Temp(:,e));
+        grid on;
+        hold on;
+    end 
+    xlabel('Time (s)')
+    ylabel('Temperature (K)')
+    title(['Current Temperature: ', num2str(mean(Temp(i,:))), ...
+        'K Max T: ', num2str(max(Temp,[],'all')),'K Min T: ',...
+        num2str(min(Temp,[],'all')),'K']) % change T        
          
     pause(0.05)
 end
 
 display('Seconds Passed', num2str(t(i)));
 finalTemp = num2str(mean(Temp(i,:)))
+
+scale = sqrt(kB*InitialTemp/me);
+h = scale*chi2rnd(3,1,10000);
+figure(3)
+histogram(h,50)
+xlabel('Thermal Velocity (m)')
+ylabel('Count (m)')
+title(['Velocity Distribution - Average Velocity: ',...
+    num2str(mean([mean(h),median(h)])/2), ' m/s']) 
 
 
 

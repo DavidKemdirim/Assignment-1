@@ -54,13 +54,23 @@ for i = 1:steps
         
         Boxes = {};
         
-        Boxes{1}.X = [0.9 1.1]*100*nm;
-        Boxes{1}.Y = [0.8 1.0]*100*nm;
+        %Test BCs
+%         Boxes{1}.X = [0.9 1.1]*100*nm; %top box
+%         Boxes{1}.Y = [0.8 1.0]*100*nm;
+% %         Boxes{1}.BC = 0.0;
+%         
+%         Boxes{2}.X = [0.9 1.1]*100*nm; %bottom box
+%         Boxes{2}.Y = [0.0 0.2]*100*nm;
+% %         Boxes{2}.BC = 0.0; 
+
+        %2nd set of BCs
+        Boxes{1}.X = [0.8 1.2]*100*nm; %top box
+        Boxes{1}.Y = [0.6 1.0]*100*nm;
 %         Boxes{1}.BC = 0.0;
         
-        Boxes{2}.X = [-.9 1.1]*100*nm;
-        Boxes{2}.Y = [0.0 0.2 1.1]*100*nm;
-%         Boxes{2}.BC = 0.0; s
+        Boxes{2}.X = [0.8 1.2]*100*nm; %bottom box
+        Boxes{2}.Y = [0.0 0.4]*100*nm;
+%         Boxes{2}.BC = 0.0;
         
         e=1;
         while e <= Elec %random positions for each particle
@@ -68,17 +78,17 @@ for i = 1:steps
             randx = round(rand*xdim)*nm;
             randy = round(rand*ydim)*nm;
             
-%             % check to see if in box
-%             if Boxes{1}.X(1,1)<randx && randx <Boxes{1}.X(1,2) &&...
-%                 Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) &&...
-%                 Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
-%                 Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) 
-%                                 
-%             else
+            % check to see if in box
+            if Boxes{1}.X(1,1)<randx && randx<Boxes{1}.X(1,2) &&...
+               Boxes{1}.Y(1,1)<randy && randy<Boxes{1}.Y(1,2) ||...%firstbox
+               Boxes{2}.X(1,1)<randx && randx<Boxes{2}.X(1,2) &&...
+               Boxes{2}.Y(1,1)<randy && randy<Boxes{2}.Y(1,2) %second box
+                                
+            else
                 x(e,i) = randx;
                 y(e,i) = randy;
                 e=e+1;
-%             end
+            end
                       
         end 
         
